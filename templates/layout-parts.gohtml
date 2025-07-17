@@ -1,0 +1,56 @@
+{{define "header"}}
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+
+<body class="h-screen bg-gray-100`">
+
+    <header class="bg-gradient-to-r from-blue-800 to-indigo-800 text-white">
+        <nav class="px-8 py-6 flex items-center space-x-12">
+            <div class="text-4xl font-serif">
+                <a href="/">Lenslocked</a>
+            </div>
+            <div class="flex-grow">
+                <a class="text-lg font-semibold hover:text-blue-100 pr-8" href="/">
+                    Home
+                </a>
+                <a class="text-lg font-semibold hover:text-blue-100 pr-8" href="/contact">
+                    Contact
+                </a>
+                <a class="text-lg font-semibold hover:text-blue-100 pr-8" href="/faq">
+                    FAQ
+                </a>
+            </div>
+            <div class="space-x-4">
+                <a href="#">Sign in</a>
+                <a href="/signup" class="px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded">
+                    Sign up
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    {{end}}
+
+    {{define "footer"}}
+    <footer class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white mt-12 w-full flex-shrink-0">
+        <div
+            class="max-w-6xl mx-auto px-8 py-10 flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
+            <div class="text-4xl font-serif">Lenslocked</div>
+            <div class="flex space-x-6">
+                <a href="/" class="hover:text-blue-300">Home</a>
+                <a href="/contact" class="hover:text-blue-300">Contact</a>
+                <a href="/faq" class="hover:text-blue-300">FAQ</a>
+            </div>
+            <div class="text-sm text-blue-200">&copy; 2025 Lenslocked. All rights reserved.</div>
+        </div>
+    </footer>
+</body>
+
+</html>
+{{end}}

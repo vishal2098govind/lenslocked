@@ -1,0 +1,16 @@
+<h1>Hello, {{.Name}}</h1>
+{{.Bio}}
+{{.Age}}
+{{.Height}}
+{{.Experience}}
+{{.Hobbies}}
+{{.Meta.Description}}
+{{if .IsAdult }} <p>Adult</p>{{else}}<p>Child</p>{{end}}
+<script>
+    const user = {
+        "name": {{.Name}},
+        "bio": {{.Bio}},
+        "Age": {{.Age}}
+    }
+</script>
+
