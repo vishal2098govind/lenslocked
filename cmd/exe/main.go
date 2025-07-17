@@ -22,9 +22,9 @@ func main() {
 		DB: db,
 	}
 
-	res, err := us.Create(userM.CreateUserRequest{
-		Email:    "vishal.govind@gmail.com",
-		Password: "vishal@2098",
+	res, err := us.Authenticate(userM.AuthenticateRequest{
+		Email:    "vishal.govind@gmil.com",
+		Password: "vishal2098",
 	})
 	if err != nil {
 		panic(err)

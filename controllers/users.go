@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	userM "github.com/vishal2098govind/lenslocked/models/user"
 )
@@ -11,7 +12,8 @@ type Users struct {
 	UserService *userM.UserService
 
 	Templates struct {
-		New Template // signup
+		New    Template // signup
+		SignIn Template // signin
 	}
 }
 
@@ -20,6 +22,13 @@ func (u Users) New(w http.ResponseWriter, r *http.Request) {
 	data.Email = r.FormValue("email")
 
 	u.Templates.New.Execute(w, data)
+}
+
+func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
+	var data struct{ Email string }
+	data.Email = r.FormValue("email")
+
+	u.Templates.SignIn.Execute(w, data)
 }
 
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
@@ -37,4 +46,31 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "User created: %+v", res.User)
+}
+
+func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
+	email := strings.ToLower(r.FormValue("email"))
+	password := r.FormValue("password")
+
+	_, err := u.UserService.Authenticate(userM.AuthenticateRequest{
+		Email:    email,
+		Password: password,
+	})
+	if err == userM.ErrUserNotFound {
+		http.Error(w, "User not found", http.StatusBadRequest)
+		return
+	}
+	if err == userM.ErrInvalidCredentials {
+		http.Error(w, "Invalid email or password", http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprint(w, "Logged user")
+
 }
