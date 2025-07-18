@@ -21,13 +21,13 @@ func FAQ(t Template) http.HandlerFunc {
 				Answer:   `Answer a5 <a href="mailto:vishal.govind@gmail.com">vishal.govind@gmail.com</a>`,
 			},
 		}
-		t.Execute(w, questions)
+		t.Execute(w, r, questions)
 	}
 
 }
 
 func StaticHandler(t Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		t.Execute(w, nil)
+		t.Execute(w, r, nil)
 	}
 }

@@ -13,6 +13,7 @@ type AuthenticateRequest struct {
 }
 
 type AuthenticateResponse struct {
+	User *User
 }
 
 var (
@@ -41,5 +42,5 @@ func (us *UserService) Authenticate(r AuthenticateRequest) (*AuthenticateRespons
 		return nil, ErrInvalidCredentials
 	}
 
-	return &AuthenticateResponse{}, nil
+	return &AuthenticateResponse{User: &user}, nil
 }

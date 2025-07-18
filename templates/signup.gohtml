@@ -4,8 +4,8 @@
     <h1 class="pt-4 pb-8 text-center text-3xl font-bold text-gray-900">
       Start sharing your photos today!
     </h1>
-    <form action="/users" method="post" enctype="multipart/form-data">
-
+    <form action="/users" method="post">
+      {{ csrfField }}
       <div class="py-2">
         <label for="email" class="text-sm font-semibold text-gray-800">
           Email Address

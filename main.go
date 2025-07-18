@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gorilla/csrf"
 	"github.com/vishal2098govind/lenslocked/controllers"
 	"github.com/vishal2098govind/lenslocked/models"
 	userM "github.com/vishal2098govind/lenslocked/models/user"
@@ -25,10 +25,14 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	csrfKey := "gFvi45R4fy5xNBlnEeZtQbfAVCYEIAUX"
+	csrfMw := csrf.Protect(
+		[]byte(csrfKey),
+		// TODO: Fix this before deploying. requires HTTPS
+		csrf.Secure(false),
+	)
+	r.Use(csrfMw)
+	r.Use(IPLoggerMiddleware)
 
 	r.Get(
 		"/",
@@ -68,6 +72,7 @@ func main() {
 	r.Get("/signin", usersC.SignIn)
 	r.Post("/users", usersC.Create)
 	r.Post("/signin", usersC.ProcessSignIn)
+	r.Get("/users/me", usersC.CurrentUser)
 
 	r.Get("/products/{productId}", func(w http.ResponseWriter, r *http.Request) {
 		pid := chi.URLParam(r, "productId")
@@ -79,4 +84,12 @@ func main() {
 
 	fmt.Println("Starting the server on :3000")
 	http.ListenAndServe(":3000", r)
+}
+
+func IPLoggerMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ip := r.RemoteAddr
+		fmt.Printf("IP: %v", ip)
+		h.ServeHTTP(w, r)
+	})
 }

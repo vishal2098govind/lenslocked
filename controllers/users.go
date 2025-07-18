@@ -21,14 +21,14 @@ func (u Users) New(w http.ResponseWriter, r *http.Request) {
 	var data struct{ Email string }
 	data.Email = r.FormValue("email")
 
-	u.Templates.New.Execute(w, data)
+	u.Templates.New.Execute(w, r, data)
 }
 
 func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
 	var data struct{ Email string }
 	data.Email = r.FormValue("email")
 
-	u.Templates.SignIn.Execute(w, data)
+	u.Templates.SignIn.Execute(w, r, data)
 }
 
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +52,7 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	email := strings.ToLower(r.FormValue("email"))
 	password := r.FormValue("password")
 
-	_, err := u.UserService.Authenticate(userM.AuthenticateRequest{
+	res, err := u.UserService.Authenticate(userM.AuthenticateRequest{
 		Email:    email,
 		Password: password,
 	})
@@ -64,13 +64,31 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid email or password", http.StatusBadRequest)
 		return
 	}
-
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
 		return
 	}
 
+	http.SetCookie(w, &http.Cookie{
+		Name:     "email",
+		Value:    res.User.Email,
+		Path:     "/",
+		HttpOnly: true,
+	})
+
 	fmt.Fprint(w, "Logged user")
 
+}
+
+func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
+	emailC, err := r.Cookie("email")
+	if err != nil {
+		// fmt.Fprint(w, "The email cookie could not be read")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+
+	fmt.Fprintf(w, "Email cookie: %s\n", emailC.Value)
+	fmt.Fprintf(w, "Headers: %+v\n", r.Header)
 }
