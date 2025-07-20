@@ -1,0 +1,14 @@
+{{template "header" .}}
+<div class="py-12 justify-center">
+    <h3>Current user</h3>
+    <p>Email: {{.Email}}</p>
+    <p>afnaeoje</p>
+    <br />
+    <form action="/signout" method="post">
+        <div class="hidden">
+            {{csrfField}}
+        </div>
+        <button type="submit">Sign out</button>
+    </form>
+</div>
+{{template "footer" .}}

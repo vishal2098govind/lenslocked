@@ -7,21 +7,24 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/csrf"
 	"github.com/vishal2098govind/lenslocked/controllers"
-	"github.com/vishal2098govind/lenslocked/models"
+	db "github.com/vishal2098govind/lenslocked/models/db"
+	sessionM "github.com/vishal2098govind/lenslocked/models/session"
 	userM "github.com/vishal2098govind/lenslocked/models/user"
 	"github.com/vishal2098govind/lenslocked/templates"
 	"github.com/vishal2098govind/lenslocked/views"
 )
 
 func main() {
-	cfg := models.DefaultPostgresConfig()
-	db, err := models.Open(cfg)
+	cfg := db.DefaultPostgresConfig()
+	db, err := db.Open(cfg)
 	if err != nil {
 		panic(err)
 	}
+	defer db.Close()
 
 	userS := userM.UserService{DB: db}
-	usersC := controllers.Users{UserService: &userS}
+	sessionS := sessionM.SessionService{DB: db}
+	usersC := controllers.Users{UserService: &userS, SessionService: &sessionS}
 
 	r := chi.NewRouter()
 
@@ -67,11 +70,15 @@ func main() {
 	usersC.Templates.SignIn = views.Must(
 		views.ParseFS(templates.FS, "signin.gohtml", "layout-parts.gohtml"),
 	)
+	usersC.Templates.CurrentUser = views.Must(
+		views.ParseFS(templates.FS, "current_user.gohtml", "layout-parts.gohtml"),
+	)
 
 	r.Get("/signup", usersC.New)
 	r.Get("/signin", usersC.SignIn)
 	r.Post("/users", usersC.Create)
 	r.Post("/signin", usersC.ProcessSignIn)
+	r.Post("/signout", usersC.ProcessSignOut)
 	r.Get("/users/me", usersC.CurrentUser)
 
 	r.Get("/products/{productId}", func(w http.ResponseWriter, r *http.Request) {
@@ -83,13 +90,16 @@ func main() {
 	})
 
 	fmt.Println("Starting the server on :3000")
-	http.ListenAndServe(":3000", r)
+	err = http.ListenAndServe(":3000", r)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func IPLoggerMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip := r.RemoteAddr
-		fmt.Printf("IP: %v", ip)
+		fmt.Printf("IP: %v\n", ip)
 		h.ServeHTTP(w, r)
 	})
 }

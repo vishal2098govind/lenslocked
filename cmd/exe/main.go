@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/vishal2098govind/lenslocked/models"
+	db "github.com/vishal2098govind/lenslocked/models/db"
 	userM "github.com/vishal2098govind/lenslocked/models/user"
 )
 
 func main() {
-	cfg := models.DefaultPostgresConfig()
+	cfg := db.DefaultPostgresConfig()
 
-	db, err := models.Open(cfg)
+	db, err := db.Open(cfg)
 	if err != nil {
 		panic(err)
 	}
