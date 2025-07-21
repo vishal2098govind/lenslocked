@@ -7,7 +7,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/csrf"
 	"github.com/vishal2098govind/lenslocked/controllers"
-	db "github.com/vishal2098govind/lenslocked/models/db"
+	"github.com/vishal2098govind/lenslocked/migrations"
+	postgresDB "github.com/vishal2098govind/lenslocked/models/db"
 	sessionM "github.com/vishal2098govind/lenslocked/models/session"
 	userM "github.com/vishal2098govind/lenslocked/models/user"
 	"github.com/vishal2098govind/lenslocked/templates"
@@ -15,12 +16,17 @@ import (
 )
 
 func main() {
-	cfg := db.DefaultPostgresConfig()
-	db, err := db.Open(cfg)
+	cfg := postgresDB.DefaultPostgresConfig()
+	db, err := postgresDB.Open(cfg)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
+
+	err = postgresDB.MigrateFS(db, migrations.FS, ".")
+	if err != nil {
+		panic(err)
+	}
 
 	userS := userM.UserService{DB: db}
 	sessionS := sessionM.SessionService{DB: db}

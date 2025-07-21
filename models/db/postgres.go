@@ -3,8 +3,10 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"io/fs"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/pressly/goose/v3"
 )
 
 // Open will open a SQL connection with the provided
@@ -44,4 +46,31 @@ func (cfg PostgresConfig) String() string {
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.SSLMode,
 	)
+}
+
+func MigrateFS(db *sql.DB, fs fs.FS, dir string) error {
+	if dir == "" {
+		dir = "."
+	}
+
+	goose.SetBaseFS(fs)
+	defer func() {
+		goose.SetBaseFS(nil)
+	}()
+
+	return Migrate(db, dir)
+}
+
+func Migrate(db *sql.DB, dir string) error {
+	err := goose.SetDialect("postgres")
+	if err != nil {
+		return fmt.Errorf("migrateFS: %w", err)
+	}
+
+	err = goose.Up(db, dir)
+	if err != nil {
+		return fmt.Errorf("migrateFS: %w", err)
+	}
+
+	return nil
 }
