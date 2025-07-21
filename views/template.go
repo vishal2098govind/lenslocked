@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/gorilla/csrf"
+	"github.com/vishal2098govind/lenslocked/context"
+	userM "github.com/vishal2098govind/lenslocked/models/user"
 )
 
 type Template struct {
@@ -27,10 +29,16 @@ func Must(t *Template, err error) *Template {
 func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface{}) {
 	buf := &strings.Builder{}
 
+	ctx := r.Context()
+	user := context.User(ctx)
+
 	tpl, _ := t.htmlTpl.Clone()
 	tpl = tpl.Funcs(template.FuncMap{
 		"csrfField": func() template.HTML {
 			return csrf.TemplateField(r)
+		},
+		"currentUser": func() *userM.User {
+			return user
 		},
 	})
 
@@ -48,6 +56,9 @@ func ParseFS(fs fs.FS, patterns ...string) (*Template, error) {
 	tpl = tpl.Funcs(template.FuncMap{
 		"csrfField": func() (template.HTML, error) {
 			return "", fmt.Errorf("csrfField function not implemented")
+		},
+		"currentUser": func() (*userM.User, error) {
+			return nil, fmt.Errorf("currentUser function not implemented")
 		},
 	})
 	tpl, err := tpl.ParseFS(fs, patterns...)

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/vishal2098govind/lenslocked/context"
+	"github.com/vishal2098govind/lenslocked/cookies"
 	sessionM "github.com/vishal2098govind/lenslocked/models/session"
 	userM "github.com/vishal2098govind/lenslocked/models/user"
 )
@@ -22,6 +24,10 @@ type Users struct {
 }
 
 func (u Users) New(w http.ResponseWriter, r *http.Request) {
+	if context.User(r.Context()) != nil {
+		http.Redirect(w, r, "/users/me", http.StatusFound)
+		return
+	}
 	var data struct{ Email string }
 	data.Email = r.FormValue("email")
 
@@ -29,6 +35,11 @@ func (u Users) New(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
+	if context.User(r.Context()) != nil {
+		http.Redirect(w, r, "/users/me", http.StatusFound)
+		return
+	}
+
 	var data struct{ Email string }
 	data.Email = r.FormValue("email")
 
@@ -58,7 +69,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setCookie(w, CookieSession, sessRes.Session.Token)
+	cookies.SetCookie(w, cookies.CookieSession, sessRes.Session.Token)
 
 	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
@@ -94,35 +105,20 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setCookie(w, CookieSession, sessRes.Session.Token)
+	cookies.SetCookie(w, cookies.CookieSession, sessRes.Session.Token)
 
 	http.Redirect(w, r, "/users/me", http.StatusFound)
 
 }
 
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
-	sessionC, err := readCookie(r, CookieSession)
-	if err != nil {
-		http.Redirect(w, r, "/signin", http.StatusFound)
-		return
-	}
-
-	res, err := u.SessionService.User(sessionM.GetUserIdRequest{
-		Token: sessionC,
-	})
-	if err != nil || res.User == nil {
-		fmt.Println(err)
-		http.Redirect(w, r, "/signin", http.StatusFound)
-		return
-	}
-
-	// fmt.Fprintf(w, "User: %+v\n", res.User)
-	// fmt.Fprintf(w, "Headers: %+v\n", r.Header)
-	u.Templates.CurrentUser.Execute(w, r, res.User)
+	ctx := r.Context()
+	user := context.User(ctx)
+	u.Templates.CurrentUser.Execute(w, r, user)
 }
 
 func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
-	sessionC, err := readCookie(r, CookieSession)
+	sessionC, err := cookies.ReadCookie(r, cookies.CookieSession)
 	if err != nil {
 		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
@@ -136,6 +132,6 @@ func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deleteCookie(w, CookieSession)
+	cookies.DeleteCookie(w, cookies.CookieSession)
 	http.Redirect(w, r, "/signin", http.StatusFound)
 }
