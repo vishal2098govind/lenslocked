@@ -113,7 +113,11 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	logger := context.Logger(ctx)
+	logger.Printf("current user")
+
 	user := context.User(ctx)
+
 	u.Templates.CurrentUser.Execute(w, r, user)
 }
 

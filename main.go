@@ -50,6 +50,7 @@ func main() {
 	)
 
 	// setup middlewares
+	loggerMW := middlewares.LoggerMiddleware{}
 	usersMW := middlewares.UsersMiddleware{SessionService: &sessionS}
 	csrfKey := "gFvi45R4fy5xNBlnEeZtQbfAVCYEIAUX"
 	csrfMw := csrf.Protect(
@@ -61,8 +62,9 @@ func main() {
 	// setup router and routes
 	r := chi.NewRouter()
 	r.Use(csrfMw)
-	r.Use(middlewares.IPLoggerMiddleware)
+	r.Use(loggerMW.IPLoggerMiddleware)
 	r.Use(usersMW.SetUser)
+	r.Use(loggerMW.Logger)
 	r.Get("/", controllers.StaticHandler(views.Must(views.ParseFS(
 		templates.FS,
 		"home.gohtml",
