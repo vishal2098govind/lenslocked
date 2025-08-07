@@ -10,7 +10,7 @@ type DeleteSessionResponse struct {
 }
 
 func (ss *SessionService) Delete(r *DeleteSessionRequest) (*DeleteSessionResponse, error) {
-	tokenHash := ss.TokenManager.hash(r.Token)
+	tokenHash := ss.TokenManager.Hash(r.Token)
 	_, err := ss.DB.Exec(`
 		DELETE FROM sessions 
 		WHERE token_hash = $1`, tokenHash)

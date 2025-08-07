@@ -1,10 +1,9 @@
 package models
 
-import "database/sql"
+import (
+	"database/sql"
 
-const (
-	// The min number of bytes to be used for each session token
-	MinBytesPerToken = 32
+	tokenM "github.com/vishal2098govind/lenslocked/models/token"
 )
 
 type Session struct {
@@ -21,16 +20,8 @@ type Session struct {
 	TokenHash string
 }
 
-type TokenManager struct {
-	// BytesPerToken is used to determine how many bytes to use while
-	// generating each session token. If this value is not set or is
-	// less than MinBytesPerToken const it will be ignored and
-	// MinBytesPerToken will be used.
-	BytesPerToken int
-}
-
 type SessionService struct {
 	DB *sql.DB
 
-	TokenManager TokenManager
+	TokenManager tokenM.TokenManager
 }

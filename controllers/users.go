@@ -3,10 +3,13 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/vishal2098govind/lenslocked/context"
 	"github.com/vishal2098govind/lenslocked/cookies"
+	emailM "github.com/vishal2098govind/lenslocked/models/email"
+	passwordResetM "github.com/vishal2098govind/lenslocked/models/password_reset"
 	sessionM "github.com/vishal2098govind/lenslocked/models/session"
 	userM "github.com/vishal2098govind/lenslocked/models/user"
 )
@@ -16,10 +19,16 @@ type Users struct {
 
 	SessionService *sessionM.SessionService
 
+	PasswordResetService *passwordResetM.PasswordResetService
+
+	EmailService *emailM.EmailService
+
 	Templates struct {
-		New         Template // signup
-		SignIn      Template // signin
-		CurrentUser Template // current user
+		New            Template // signup
+		SignIn         Template // signin
+		CurrentUser    Template // current user
+		ForgotPassword Template // forgot password
+		ResetPassword  Template // reset password
 	}
 }
 
@@ -138,4 +147,90 @@ func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
 
 	cookies.DeleteCookie(w, cookies.CookieSession)
 	http.Redirect(w, r, "/signin", http.StatusFound)
+}
+
+func (u Users) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	u.Templates.ForgotPassword.Execute(w, r, nil)
+}
+
+func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
+	email := r.FormValue("email")
+	user, err := u.UserService.ViaEmail(email)
+	if err == userM.ErrUserNotFound {
+		fmt.Fprint(w, "This email is not registered. Consider creating an account using this email.")
+		return
+	}
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	res, err := u.PasswordResetService.Create(passwordResetM.CreatePasswordResetRequest{
+		UserID: user.ID,
+	})
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	val := url.Values{
+		"reset-token": []string{res.PasswordReset.Token},
+	}
+
+	resetUrl := fmt.Sprintf("http://localhost:3000/reset-password?%s", val.Encode())
+	err = u.EmailService.SendForgotPasswordEmail(emailM.SendForgotPasswordEmailRequest{
+		To:       email,
+		ResetUrl: resetUrl,
+	})
+	if err != nil {
+		fmt.Println("failed to send email", err)
+	}
+
+	fmt.Fprintf(w, "Check your mail for reset password link")
+}
+
+func (u Users) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	token := r.FormValue("reset-token")
+	u.Templates.ResetPassword.Execute(w, r, struct{ Token string }{Token: token})
+}
+
+func (u Users) ProcessResetPassword(w http.ResponseWriter, r *http.Request) {
+	token := r.FormValue("reset-token")
+	newPass := r.FormValue("password")
+	res, err := u.PasswordResetService.Verify(passwordResetM.VerifyRequest{
+		Token: token,
+	})
+	if err == passwordResetM.ErrInvalidToken {
+		fmt.Println(err)
+		http.Error(w, "invalid token", http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	ures, err := u.UserService.UpdatePassword(userM.UpdatePasswordRequest{
+		UserID:      res.PasswordReset.UserID,
+		NewPassword: newPass,
+	})
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	sess, err := u.SessionService.Create(sessionM.CreateSessionRequest{
+		UserID: ures.User.ID,
+	})
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	cookies.SetCookie(w, cookies.CookieSession, sess.Session.Token)
+	http.Redirect(w, r, "/users/me", http.StatusFound)
 }

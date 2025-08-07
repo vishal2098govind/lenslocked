@@ -17,7 +17,7 @@ type GetUserIdResponse struct {
 }
 
 func (ss *SessionService) User(r GetUserIdRequest) (*GetUserIdResponse, error) {
-	tokenHash := ss.TokenManager.hash(r.Token)
+	tokenHash := ss.TokenManager.Hash(r.Token)
 
 	user := userM.User{}
 	row := ss.DB.QueryRow(`
