@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/vishal2098govind/lenslocked/context"
 	"github.com/vishal2098govind/lenslocked/cookies"
+	lenslockederr "github.com/vishal2098govind/lenslocked/errors"
 	emailM "github.com/vishal2098govind/lenslocked/models/email"
 	passwordResetM "github.com/vishal2098govind/lenslocked/models/password_reset"
 	sessionM "github.com/vishal2098govind/lenslocked/models/session"
@@ -56,16 +58,27 @@ func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
-	email := r.FormValue("email")
-	password := r.FormValue("password")
+	var data struct {
+		Email    string
+		Password string
+	}
+	data.Email = r.FormValue("email")
+	data.Password = r.FormValue("password")
 
 	res, err := u.UserService.Create(userM.CreateUserRequest{
-		Email:    email,
-		Password: password,
+		Email:    data.Email,
+		Password: data.Password,
 	})
+
+	if errors.Is(err, userM.ErrEmailAlreadyExists) {
+		fmt.Println(err)
+		u.Templates.New.Execute(w, r, data, lenslockederr.Public(err, "Email already exists"))
+		return
+	}
+
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
+		u.Templates.New.Execute(w, r, data, lenslockederr.Public(err, "Something went wrong"))
 		return
 	}
 
@@ -74,7 +87,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		u.Templates.New.Execute(w, r, data, lenslockederr.Public(err, "Something went wrong"))
 		return
 	}
 

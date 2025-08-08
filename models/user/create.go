@@ -1,9 +1,12 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -39,8 +42,15 @@ func (us *UserService) Create(r CreateUserRequest) (*CreateUserResponse, error) 
 
 	err = row.Scan(&user.ID)
 	if err != nil {
-		return nil, fmt.Errorf("create user: %w", err)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == pgerrcode.UniqueViolation {
+				return nil, ErrEmailAlreadyExists
+			}
+		}
+		return nil, fmt.Errorf("create user:  %w", err)
 	}
+
 	return &CreateUserResponse{
 		User: &user,
 	}, nil

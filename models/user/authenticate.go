@@ -16,11 +16,6 @@ type AuthenticateResponse struct {
 	User *User
 }
 
-var (
-	ErrUserNotFound       = fmt.Errorf("user not found")
-	ErrInvalidCredentials = fmt.Errorf("invalid credentials")
-)
-
 func (us *UserService) Authenticate(r AuthenticateRequest) (*AuthenticateResponse, error) {
 	row := us.DB.QueryRow(`
 		SELECT id, email, password_hash

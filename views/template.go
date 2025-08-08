@@ -26,7 +26,11 @@ func Must(t *Template, err error) *Template {
 
 }
 
-func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface{}) {
+type public interface {
+	Public() string
+}
+
+func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface{}, errs ...error) {
 	buf := &strings.Builder{}
 
 	ctx := r.Context()
@@ -39,6 +43,18 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface
 		},
 		"currentUser": func() *userM.User {
 			return user
+		},
+		"errors": func() []string {
+			ers := []string{}
+			for _, v := range errs {
+				var pubErr public
+				if errors.As(v, &pubErr) {
+					ers = append(ers, pubErr.Public())
+				} else {
+					ers = append(ers, "Something went wrong.")
+				}
+			}
+			return ers
 		},
 	})
 
@@ -59,6 +75,9 @@ func ParseFS(fs fs.FS, patterns ...string) (*Template, error) {
 		},
 		"currentUser": func() (*userM.User, error) {
 			return nil, fmt.Errorf("currentUser function not implemented")
+		},
+		"errors": func() []string {
+			return nil
 		},
 	})
 	tpl, err := tpl.ParseFS(fs, patterns...)

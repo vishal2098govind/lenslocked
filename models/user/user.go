@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"fmt"
 )
 
 type User struct {
@@ -13,3 +14,9 @@ type User struct {
 type UserService struct {
 	DB *sql.DB
 }
+
+var (
+	ErrUserNotFound       = fmt.Errorf("models/user: user not found")
+	ErrInvalidCredentials = fmt.Errorf("models/user: invalid credentials")
+	ErrEmailAlreadyExists = fmt.Errorf("models/user: email already exists")
+)
