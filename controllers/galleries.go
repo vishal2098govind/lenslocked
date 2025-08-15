@@ -19,6 +19,7 @@ func (c *Galleries) New(w http.ResponseWriter, r *http.Request) {
 		Title string `json:"title"`
 	}
 	var in input
+	defer r.Body.Close()
 	if err := ReadJSON(r, &in); err != nil {
 		fmt.Println(err)
 		WriteErrJSON(w, http.StatusInternalServerError, "Failed to read request body")
@@ -83,6 +84,7 @@ func (c *Galleries) SetGalleryTitle(w http.ResponseWriter, r *http.Request) {
 		ID    int    `json:"id"`
 	}
 	var in input
+	defer r.Body.Close()
 	if err := ReadJSON(r, &in); err != nil {
 		WriteErrJSON(w, http.StatusInternalServerError, "Failed to read request body")
 		return

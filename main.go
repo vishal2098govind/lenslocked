@@ -156,7 +156,7 @@ func main() {
 	r.Post("/forgot-password", usersC.ProcessForgotPassword)
 	r.Get("/reset-password", usersC.ResetPassword)
 	r.Post("/reset-password", usersC.ProcessResetPassword)
-	r.Route("/gallery", func(r chi.Router) {
+	r.Route("/galleries", func(r chi.Router) {
 		r.Use(usersMW.RequireUser)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Use(galleryMW.SetGalleryID)

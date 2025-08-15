@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/vishal2098govind/lenslocked/context"
 	"github.com/vishal2098govind/lenslocked/cookies"
@@ -58,27 +57,30 @@ func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
-	var data struct {
-		Email    string
-		Password string
+	type input struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
-	data.Email = r.FormValue("email")
-	data.Password = r.FormValue("password")
+	var in input
+	if err := ReadJSON(r, &in); err != nil {
+		WriteErrJSON(w, http.StatusBadRequest, "invalid request")
+		return
+	}
 
 	res, err := u.UserService.Create(userM.CreateUserRequest{
-		Email:    data.Email,
-		Password: data.Password,
+		Email:    in.Email,
+		Password: in.Password,
 	})
 
 	if errors.Is(err, userM.ErrEmailAlreadyExists) {
 		fmt.Println(err)
-		u.Templates.New.Execute(w, r, data, lenslockederr.Public(err, "Email already exists"))
+		u.Templates.New.Execute(w, r, in, lenslockederr.Public(err, "Email already exists"))
 		return
 	}
 
 	if err != nil {
 		fmt.Println(err)
-		u.Templates.New.Execute(w, r, data, lenslockederr.Public(err, "Something went wrong"))
+		u.Templates.New.Execute(w, r, in, lenslockederr.Public(err, "Something went wrong"))
 		return
 	}
 
@@ -87,7 +89,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		fmt.Println(err)
-		u.Templates.New.Execute(w, r, data, lenslockederr.Public(err, "Something went wrong"))
+		u.Templates.New.Execute(w, r, in, lenslockederr.Public(err, "Something went wrong"))
 		return
 	}
 
@@ -97,12 +99,19 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
-	email := strings.ToLower(r.FormValue("email"))
-	password := r.FormValue("password")
+	type input struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var in input
+	if err := ReadJSON(r, &in); err != nil {
+		WriteErrJSON(w, http.StatusBadRequest, "invalid request")
+		return
+	}
 
 	res, err := u.UserService.Authenticate(userM.AuthenticateRequest{
-		Email:    email,
-		Password: password,
+		Email:    in.Email,
+		Password: in.Password,
 	})
 	if errors.Is(err, userM.ErrUserNotFound) {
 		http.Error(w, "User not found", http.StatusBadRequest)
