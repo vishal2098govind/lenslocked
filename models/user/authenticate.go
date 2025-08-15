@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
@@ -25,7 +26,7 @@ func (us *UserService) Authenticate(r AuthenticateRequest) (*AuthenticateRespons
 
 	user := User{}
 	err := row.Scan(&user.ID, &user.Email, &user.PasswordHash)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrUserNotFound
 	}
 	if err != nil {

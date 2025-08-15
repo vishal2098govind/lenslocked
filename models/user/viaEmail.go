@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 )
 
@@ -14,7 +15,7 @@ func (us *UserService) ViaEmail(email string) (*User, error) {
 
 	user := User{}
 	err := row.Scan(&user.ID, &user.Email, &user.PasswordHash)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrUserNotFound
 	}
 	if err != nil {

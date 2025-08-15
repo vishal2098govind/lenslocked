@@ -104,11 +104,11 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 		Email:    email,
 		Password: password,
 	})
-	if err == userM.ErrUserNotFound {
+	if errors.Is(err, userM.ErrUserNotFound) {
 		http.Error(w, "User not found", http.StatusBadRequest)
 		return
 	}
-	if err == userM.ErrInvalidCredentials {
+	if errors.Is(err, userM.ErrInvalidCredentials) {
 		http.Error(w, "Invalid email or password", http.StatusBadRequest)
 		return
 	}
@@ -169,7 +169,7 @@ func (u Users) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	user, err := u.UserService.ViaEmail(email)
-	if err == userM.ErrUserNotFound {
+	if errors.Is(err, userM.ErrUserNotFound) {
 		fmt.Fprint(w, "This email is not registered. Consider creating an account using this email.")
 		return
 	}

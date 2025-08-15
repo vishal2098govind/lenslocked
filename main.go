@@ -8,13 +8,13 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/csrf"
 	"github.com/joho/godotenv"
 	"github.com/vishal2098govind/lenslocked/controllers"
 	"github.com/vishal2098govind/lenslocked/middlewares"
 	"github.com/vishal2098govind/lenslocked/migrations"
 	postgresDB "github.com/vishal2098govind/lenslocked/models/db"
 	emailM "github.com/vishal2098govind/lenslocked/models/email"
+	galleryM "github.com/vishal2098govind/lenslocked/models/gallery"
 	passwordResetM "github.com/vishal2098govind/lenslocked/models/password_reset"
 	sessionM "github.com/vishal2098govind/lenslocked/models/session"
 	userM "github.com/vishal2098govind/lenslocked/models/user"
@@ -84,6 +84,7 @@ func main() {
 	sessionS := &sessionM.SessionService{DB: db}
 	emailS := emailM.NewEmailService(cfg.SMTP)
 	passwordResetS := &passwordResetM.PasswordResetService{DB: db}
+	galleryS := &galleryM.GalleryService{DB: db}
 
 	// setup controllers
 	usersC := controllers.Users{
@@ -108,6 +109,10 @@ func main() {
 		views.ParseFS(templates.FS, "reset_password.html", "layout-parts.gohtml"),
 	)
 
+	galleryC := controllers.Galleries{
+		GalleryService: galleryS,
+	}
+
 	emailS.Templates.ForgotPasswordTpl = template.Must(
 		template.ParseFS(templates.FS, "forgot_password_email.gohtml"),
 	)
@@ -115,14 +120,11 @@ func main() {
 	// setup middlewares
 	loggerMW := middlewares.LoggerMiddleware{}
 	usersMW := middlewares.UsersMiddleware{SessionService: sessionS}
-	csrfMw := csrf.Protect(
-		[]byte(cfg.CSRF.Key),
-		csrf.Secure(cfg.CSRF.Secure),
-	)
+	galleryMW := middlewares.GalleryMW{GalleryService: galleryS}
 
 	// setup router and routes
 	r := chi.NewRouter()
-	r.Use(csrfMw)
+	// r.Use(csrfMw)
 	r.Use(loggerMW.IPLoggerMiddleware)
 	r.Use(usersMW.SetUser)
 	r.Use(loggerMW.Logger)
@@ -154,12 +156,24 @@ func main() {
 	r.Post("/forgot-password", usersC.ProcessForgotPassword)
 	r.Get("/reset-password", usersC.ResetPassword)
 	r.Post("/reset-password", usersC.ProcessResetPassword)
+	r.Route("/gallery", func(r chi.Router) {
+		r.Use(usersMW.RequireUser)
+		r.Route("/{id}", func(r chi.Router) {
+			r.Use(galleryMW.SetGalleryID)
+			r.Get("/", galleryC.GetGalleryByID)
+			r.Post("/", galleryC.SetGalleryTitle)
+			r.Delete("/", galleryC.DeleteGallery)
+		})
+		r.Post("/", galleryC.New)
+		r.Get("/", galleryC.GetGalleriesByUserID)
+	})
 
 	r.Get("/products/{productId}", func(w http.ResponseWriter, r *http.Request) {
 		pid := chi.URLParam(r, "productId")
 		fmt.Fprint(w, "product id:", pid)
 	})
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.URL.Path)
 		http.NotFound(w, r)
 	})
 
